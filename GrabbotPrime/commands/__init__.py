@@ -1,1 +1,1 @@
-from .parser import *
+from .handler import *

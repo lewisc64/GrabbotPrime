@@ -11,7 +11,7 @@ def component(class_reference):
     component_classes[class_reference.name] = class_reference
     return class_reference
 
-def create_component(data):
+def create_component(data, **kwargs):
     log.debug(f"Creating component from: {data}")
 
     if data["type_name"] not in component_classes:
@@ -19,7 +19,7 @@ def create_component(data):
         log.debug(f"    Data: {data}")
         raise ValueError
     
-    return component_classes[data["type_name"]](**data)
+    return component_classes[data["type_name"]](**data, **kwargs)
 
 class Component:
 

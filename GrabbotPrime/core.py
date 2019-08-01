@@ -24,8 +24,18 @@ class Core:
             except ValueError:
                 pass
 
+    def open_command_tunnel(self, content):
+        matches = commands.recognise_command(content)
+        if len(matches) == 0:
+            return None
+        
+        context = commands.create_context(matches[0])
+        context.initial_message = content
+        context.run_command()
+        return context.tunnel
+    
     def create_component(self, data, save=True):
-        component = components.create_component(data)
+        component = components.create_component(data, core=self)
         if save:
             component.save(self.database)
         self.components.append(component)

@@ -28,17 +28,31 @@ class Core:
         matches = commands.recognise_command(content)
         if len(matches) == 0:
             return None
+
+        tunnel = commands.MessageTunnel()
         
-        context = commands.create_context(matches[0])
+        context = commands.CommandContext(matches[0], tunnel)
         context.initial_message = content
+        context.core = self
         context.run_command()
-        return context.tunnel
+        return tunnel
     
     def create_component(self, data, save=True):
         component = components.create_component(data, core=self)
         if save:
             component.save(self.database)
         self.components.append(component)
+
+    def find_component_by_filter(self, record_filter):
+        return self.find_components_by_filter(record_filter)[0]
+
+    def find_components_by_filter(self, record_filter):
+        out = []
+        for record in self.database.find_all("components", record_filter):
+            for component in self.components:
+                if component.uuid == record["uuid"]:
+                    out.append(component)
+        return out
 
     def save_all(self):
 

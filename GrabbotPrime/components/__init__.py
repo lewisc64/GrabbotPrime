@@ -1,4 +1,4 @@
 from .component import *
 
-from .philipshue import *
-from .discordbot import *
+import components.philipshue
+import components.discordbot

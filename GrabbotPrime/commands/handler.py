@@ -9,6 +9,8 @@ log = logging.getLogger(__name__)
 
 class MessageTunnel:
 
+    TIMEOUT = 60
+
     def __init__(self, expected_clients=2):
 
         self.expected_clients = expected_clients
@@ -44,16 +46,22 @@ class MessageTunnel:
 
     def wait_for_connection(self):
         t = time.time()
-        while not self.connected and time.time() - t < 10:
+        while not self.connected and time.time() - t < MessageTunnel.TIMEOUT:
             pass
 
-        if time.time() - t >= 10:
+        if time.time() - t >= MessageTunnel.TIMEOUT:
             raise Exception("Waiting for connection took too long.")
 
     def wait_for_message(self, client_number):
         other_client = self.clients[client_number - 1]
-        while other_client["last_messages_length"] == len(other_client["messages"]):
+        
+        t = time.time()
+        while other_client["last_messages_length"] == len(other_client["messages"]) and time.time() - t < MessageTunnel.TIMEOUT:
             pass
+
+        if time.time() - t >= MessageTunnel.TIMEOUT:
+            raise Exception("Waiting for message took too long.")
+        
         other_client["last_messages_length"] = len(other_client["messages"])
         return other_client["messages"][-1]
 
@@ -62,10 +70,18 @@ class MessageTunnel:
 
 class CommandContext:
 
-    def __init__(self, command):
-        self.tunnel = MessageTunnel()
+    def __init__(self, command, tunnel):
+        self.tunnel = tunnel
+        self.tunnel_id = tunnel.register()
         self.command_thread = Thread(target=command.handle, args=(self,), name=str(command), daemon=True)
         self.initial_message = None
+        self.core = None
+
+    def send_message(self, content):
+        self.tunnel.send_message(self.tunnel_id, content)
+
+    def wait_for_message(self):
+        self.tunnel.wait_for_message(self.tunnel_id)
 
     def run_command(self):
         Thread(target=self.manage_command, daemon=True).start()
@@ -88,14 +104,6 @@ def recognise_command(content):
             recognitions.append(command)
             
     return recognitions
-
-def create_context(command):
-
-    log.debug(f"Creating connection to command object: {command}")
-    
-    context = CommandContext(command)
-    
-    return context
 
 if __name__ == "__main__":
     context = connect(commands[0])

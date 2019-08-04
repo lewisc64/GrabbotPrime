@@ -2,6 +2,8 @@ from ..component import *
 from .discrod import *
 import logging
 
+log = logging.getLogger(__name__)
+
 @component
 class DiscordBot(Component):
 
@@ -18,6 +20,11 @@ class DiscordBot(Component):
         
         self.bot = Bot(self.token)
         self.bot.on_message(self._message)
+
+    def remove_tunnel(self, channel_id):
+        log.debug("Removing tunnel from discord...")
+        if channel_id in self.tunnels:
+            del self.tunnels[channel_id]
 
     def _message(self, data):
         if data["author"]["id"] == self.bot.user["id"]:
@@ -38,16 +45,23 @@ class DiscordBot(Component):
             tunnel.wait_for_connection()
             
             while tunnel.connected:
-                message = tunnel.wait_for_message(client_id)
+                try:
+                    message = tunnel.wait_for_message(client_id)
+                except:
+                    break
                 self.bot.send_message(channel_id, str(message))
-
-            log.debug("Removing tunnel from discord, connection closed.")
-            del self.tunnels[channel_id]
+            self.remove_tunnel(channel_id)
             
         else:
             tunnel = self.tunnels[channel_id]["tunnel"]
-            client_id = self.tunnels[channel_id]["client_id"]
-            tunnel.send_message(client_id, data["content"])
+
+            if tunnel.connected:
+                client_id = self.tunnels[channel_id]["client_id"]
+                tunnel.send_message(client_id, data["content"])
+            else:
+                log.warning("Dead tunnel found in storage.")
+                self.remove_tunnel(channel_id)
+                self._message(data)
 
     def cleanup(self):
         self.bot.logout()

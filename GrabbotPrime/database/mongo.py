@@ -44,3 +44,9 @@ class MongoDatabase:
     def get_all_records(self, collection):
         log.debug(f"Getting all records for collection '{collection}'...")
         return list(self.db[collection].find({}))
+
+    def find_all(self, collection, data_filter):
+        return self.db[collection].find(data_filter)
+
+    def find(self, collection, data_filter):
+        return self.db[collection].find_one(data_filter)

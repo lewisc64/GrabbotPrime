@@ -19,11 +19,4 @@ class Command:
         pass
 
     def handle(self, context, *args, **kwargs):
-        context.tunnel_id = context.tunnel.register()
         context.tunnel.wait_for_connection()
-
-    def wait_for_message(self, context):
-        return context.tunnel.wait_for_message(context.tunnel_id)
-
-    def send_message(self, context, content):
-        return context.tunnel.send_message(context.tunnel_id, content)

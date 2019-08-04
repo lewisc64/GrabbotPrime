@@ -42,5 +42,7 @@ class Component:
 
         for field_name in self.writeable_values:
             record[field_name] = getattr(self, field_name)
+
+        print(record)
         
         database.insert("components", { "uuid": self.uuid }, record, upsert=True)

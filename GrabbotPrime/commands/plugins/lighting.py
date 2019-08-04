@@ -76,15 +76,25 @@ class DiscoverBridges(Command):
 @command   
 class TurnLight(Command):
 
-    command_parse_regex = re.compile(r"turn (?:the )?(?P<name>[a-z]+) lights? (?P<action>.+)")
+    formats = [
+        re.compile(r"(?:turn|set) (?:the )?lights? in (?P<name>.+?) (?:to )?(?P<action>.+)", re.IGNORECASE),
+        re.compile(r"(?:turn|set) (?:the )?(?P<name>.+?) lights? (?:to )?(?P<action>.+)", re.IGNORECASE),
+    ]
 
     def recognise(self, content):
-        return TurnLight.command_parse_regex.match(content)
+        for regex in TurnLight.formats:
+            if regex.match(content):
+                return True
+        return False
 
     def handle(self, context, *args, **kwargs):
         super().handle(context, *args, **kwargs)
+
+        for regex in TurnLight.formats:
+            if regex.match(context.initial_message):
+                match = regex.search(context.initial_message)
+                break
         
-        match = TurnLight.command_parse_regex.search(context.initial_message)
         name = match.group("name")
         action = match.group("action")
 
@@ -93,4 +103,8 @@ class TurnLight(Command):
         for data in lights:
             data["component"].set_light(data["light_id"], {"on": action == "on"})
 
-        print(lights)
+        if len(lights) > 0:
+            context.send_message("Done.")
+        else:
+            context.send_message("Couldn't find any lights using that identifier.")
+
